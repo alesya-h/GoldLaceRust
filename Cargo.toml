@@ -1,0 +1,15 @@
+[package]
+name = "gold_lace_rust"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# SDL2 has solid GNOME/Wayland support and real fullscreen APIs.  Use the
+# system SDL2 from shell.nix via pkg-config instead of vendoring/building SDL2.
+sdl2 = { version = "0.38", features = ["use-pkgconfig"] }
+glow = "0.16"
+bytemuck = "1"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
