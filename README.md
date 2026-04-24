@@ -14,6 +14,7 @@ This implementation is based on static analysis notes summarized in
   - pass 2 applies palette lookup and edge-aware antialiasing
 - All 46 recovered original palettes embedded from repo-local `palettes.json`.
 - Native drawable-size rendering for resize, fullscreen, and Hi-DPI displays.
+- Starts in desktop fullscreen with a random palette.
 - Pattern history for moving backward and forward through generated patterns.
 
 ## Controls
@@ -24,6 +25,7 @@ This implementation is based on static analysis notes summarized in
 | `Shift` + `Space` | Previous pattern |
 | `N` | Force-generate a new pattern branch |
 | `[` / `]` | Previous / next palette |
+| `R` | Random palette |
 | `P` | Pause/resume palette scrolling |
 | `F` | Toggle desktop fullscreen |
 | `Q` or `Esc` | Quit |

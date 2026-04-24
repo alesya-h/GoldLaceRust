@@ -46,6 +46,13 @@ fn main() {
         glow::Context::from_loader_function(|name| video.gl_get_proc_address(name) as *const _)
     };
     let mut event_pump = sdl.event_pump().expect("events");
+    let mut fullscreen = true;
+    if let Err(e) = window.set_fullscreen(FullscreenType::Desktop) {
+        fullscreen = false;
+        eprintln!("initial fullscreen failed: {e}");
+    } else {
+        eprintln!("fullscreen: on");
+    }
 
     let (out_w, out_h) = drawable_size(&window);
     let mut app = App::new(out_w, out_h);
@@ -55,7 +62,6 @@ fn main() {
         renderer.upload_palette(app.current_palette());
     }
     eprintln!("render size: {}x{}", out_w, out_h);
-    let mut fullscreen = false;
 
     'running: loop {
         for event in event_pump.poll_iter() {
@@ -112,6 +118,14 @@ fn main() {
                     repeat: false,
                     ..
                 } => app.paused = !app.paused,
+                Event::KeyDown {
+                    keycode: Some(Keycode::R),
+                    repeat: false,
+                    ..
+                } => {
+                    app.random_palette();
+                    unsafe { renderer.upload_palette(app.current_palette()) };
+                }
                 Event::KeyDown {
                     keycode: Some(Keycode::LeftBracket),
                     repeat: false,
@@ -553,13 +567,14 @@ impl App {
             cos_lut[i] = a.cos();
         }
         let palettes = build_palettes();
+        let pal_idx = random_index(palettes.len());
         let mut app = Self {
             w,
             h,
             sin_lut,
             cos_lut,
             palettes,
-            pal_idx: 0,
+            pal_idx,
             palette_scroll: 0.0,
             state: State::new(seed_now()),
             patterns: Vec::new(),
@@ -642,6 +657,19 @@ impl App {
         self.pal_idx = (self.pal_idx + 1) % self.palettes.len();
         self.palette_scroll = 0.0;
         eprintln!("palette: {}", self.palettes[self.pal_idx].name);
+    }
+
+    fn random_palette(&mut self) {
+        let len = self.palettes.len();
+        if len > 1 {
+            let mut idx = random_index(len - 1);
+            if idx >= self.pal_idx {
+                idx += 1;
+            }
+            self.pal_idx = idx;
+        }
+        self.palette_scroll = 0.0;
+        eprintln!("palette random: {}", self.palettes[self.pal_idx].name);
     }
 
     fn li(&self, phase: f32) -> usize {
@@ -1471,6 +1499,14 @@ fn seed_now() -> u64 {
         .duration_since(UNIX_EPOCH)
         .unwrap_or(Duration::from_secs(1))
         .as_nanos() as u64
+}
+
+fn random_index(len: usize) -> usize {
+    if len == 0 {
+        0
+    } else {
+        (seed_now() as usize) % len
+    }
 }
 
 fn drawable_size(window: &sdl2::video::Window) -> (usize, usize) {
