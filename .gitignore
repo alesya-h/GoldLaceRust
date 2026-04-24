@@ -1,3 +1,3 @@
-GoldLaceRust/target/
-GoldLaceRust/*.ppm
-GoldLaceRust/*.png
+/target/
+/*.ppm
+/*.png

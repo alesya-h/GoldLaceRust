@@ -4,6 +4,7 @@ use glow::HasContext;
 use sdl2::event::{Event, WindowEvent};
 use sdl2::keyboard::{Keycode, Mod};
 use sdl2::video::{FullscreenType, GLProfile};
+use serde::Deserialize;
 use std::f32::consts::PI;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -1287,6 +1288,14 @@ struct Node {
     g: i32,
     b: i32,
 }
+
+#[derive(Deserialize)]
+struct PaletteJson {
+    name: String,
+    phase: i32,
+    nodes: Vec<[i32; 4]>,
+}
+
 struct Palette {
     name: String,
     phase: i32,
@@ -1295,7 +1304,7 @@ struct Palette {
 }
 
 fn build_palettes() -> Vec<Palette> {
-    let mut palettes = parse_palettes(PALETTES_PLT).expect("parse embedded palettes.plt");
+    let mut palettes = parse_palettes_json(PALETTES_JSON).expect("parse embedded palettes.json");
     for pal in &mut palettes {
         build_dense_palette(pal);
     }
@@ -1303,73 +1312,37 @@ fn build_palettes() -> Vec<Palette> {
     palettes
 }
 
-fn parse_palettes(src: &str) -> Result<Vec<Palette>, String> {
-    let lines: Vec<&str> = src
-        .lines()
-        .map(str::trim)
-        .filter(|line| !line.is_empty())
-        .collect();
-    let mut i = 0usize;
-    let mut palettes = Vec::new();
-
-    while i < lines.len() {
-        let Some(name) = lines[i].strip_prefix("name:").map(str::trim) else {
-            i += 1;
-            continue;
-        };
-        i += 1;
-        if i + 2 >= lines.len() {
-            return Err(format!("palette {name}: missing header fields"));
-        }
-        let phase = parse_i32(lines[i], name, "phase")?;
-        i += 1;
-        let _enabled = parse_i32(lines[i], name, "enabled")?;
-        i += 1;
-        let count = parse_i32(lines[i], name, "node count")? as usize;
-        i += 1;
-
-        let mut nodes = Vec::with_capacity(count);
-        for node_idx in 0..count {
-            if i >= lines.len() {
-                return Err(format!("palette {name}: missing node {node_idx}"));
-            }
-            let vals: Vec<i32> = lines[i]
-                .split_whitespace()
-                .map(|part| parse_i32(part, name, "node value"))
-                .collect::<Result<_, _>>()?;
-            if vals.len() != 4 {
-                return Err(format!(
-                    "palette {name}: node {node_idx} has {} fields, expected 4",
-                    vals.len()
-                ));
-            }
-            nodes.push(Node {
-                pos: vals[0],
-                r: vals[1],
-                g: vals[2],
-                b: vals[3],
-            });
-            i += 1;
-        }
-
-        palettes.push(Palette {
-            name: name.to_owned(),
-            phase,
-            nodes,
-            dense: vec![0; PAL_N],
-        });
-    }
-
+fn parse_palettes_json(src: &str) -> Result<Vec<Palette>, String> {
+    let palettes: Vec<PaletteJson> = serde_json::from_str(src)
+        .map_err(|err| format!("failed to parse embedded palettes.json: {err}"))?;
     if palettes.is_empty() {
-        Err("no palettes found".to_owned())
-    } else {
-        Ok(palettes)
+        return Err("no palettes found".to_owned());
     }
-}
 
-fn parse_i32(s: &str, palette_name: &str, field: &str) -> Result<i32, String> {
-    s.parse::<i32>()
-        .map_err(|err| format!("palette {palette_name}: bad {field} '{s}': {err}"))
+    palettes
+        .into_iter()
+        .map(|p| {
+            if p.nodes.is_empty() {
+                return Err(format!("palette {} has no nodes", p.name));
+            }
+            let nodes = p
+                .nodes
+                .into_iter()
+                .map(|n| Node {
+                    pos: n[0],
+                    r: n[1],
+                    g: n[2],
+                    b: n[3],
+                })
+                .collect();
+            Ok(Palette {
+                name: p.name,
+                phase: p.phase,
+                nodes,
+                dense: vec![0; PAL_N],
+            })
+        })
+        .collect()
 }
 
 fn build_dense_palette(p: &mut Palette) {
@@ -1762,7 +1735,7 @@ void main() {
 }
 "#;
 
-const PALETTES_PLT: &str = include_str!("../../palettes.plt");
+const PALETTES_JSON: &str = include_str!("../palettes.json");
 
 #[cfg(test)]
 mod tests {
@@ -1770,7 +1743,7 @@ mod tests {
 
     #[test]
     fn parses_all_original_palettes() {
-        let palettes = parse_palettes(PALETTES_PLT).unwrap();
+        let palettes = parse_palettes_json(PALETTES_JSON).unwrap();
         assert_eq!(palettes.len(), 46);
         assert_eq!(palettes.first().unwrap().name, "Camomile");
         assert_eq!(palettes.last().unwrap().name, "Ice III");

@@ -12,7 +12,7 @@ This implementation is based on static analysis notes summarized in
 - OpenGL/GPU renderer using a two-pass shader pipeline:
   - pass 1 renders the procedural scalar field into an `R32F` float texture
   - pass 2 applies palette lookup and edge-aware antialiasing
-- All 46 recovered original palettes embedded from `palettes.plt`.
+- All 46 recovered original palettes embedded from repo-local `palettes.json`.
 - Native drawable-size rendering for resize, fullscreen, and Hi-DPI displays.
 - Pattern history for moving backward and forward through generated patterns.
 
@@ -61,3 +61,6 @@ The current renderer is visually faithful but not bit-exact. It keeps some older
 CPU-rendering code around as a reference while the GPU path settles. The shader
 layout is intentionally close to a future WebGL2/Shadertoy-style port: scalar
 field first, palette/color/AA second.
+
+Palette data lives in [`palettes.json`](palettes.json), converted from the
+recovered `palettes.plt` format so this repo is self-contained.
