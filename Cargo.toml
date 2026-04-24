@@ -2,6 +2,7 @@
 name = "gold_lace_rust"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
 
 [dependencies]
 # SDL2 has solid GNOME/Wayland support and real fullscreen APIs.  Use the

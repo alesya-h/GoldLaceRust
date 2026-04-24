@@ -64,3 +64,10 @@ field first, palette/color/AA second.
 
 Palette data lives in [`palettes.json`](palettes.json), converted from the
 recovered `palettes.plt` format so this repo is self-contained.
+
+## Licensing
+
+- Rust source code: MIT, see [`LICENSE-MIT`](LICENSE-MIT).
+- Documentation/spec text: CC0 1.0, see [`LICENSE-CC0`](LICENSE-CC0).
+- `palettes.json`: original-derived compatibility data with unknown copyright
+  status, see [`PALETTES-NOTICE.md`](PALETTES-NOTICE.md).
